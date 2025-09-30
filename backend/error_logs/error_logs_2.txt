@@ -1,0 +1,13 @@
+[2025-09-29 11:22:10] WARNING: Disk space low. Only 5% remaining.
+    Path: /var/logs
+
+[2025-09-29 11:22:45] ERROR: Unable to write to log file.
+    Module: logger.core
+    OSError: [Errno 28] No space left on device
+
+[2025-09-29 11:23:05] INFO: Initiating cleanup of old log files...
+
+[2025-09-29 11:23:10] ERROR: Cleanup failed.
+    Exception: PermissionError: [Errno 13] Permission denied: '/var/logs/archive/'
+
+[2025-09-29 11:23:30] CRITICAL: Log rotation aborted. Manual intervention required.

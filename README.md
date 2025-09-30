@@ -21,3 +21,9 @@ AI Ops Copilot turns natural language into real DevOps actions:
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --reload
+
+### Deploy Example
+Request:
+```bash
+POST /deploy
+{ "service_name": "redis", "image": "redis:latest" }

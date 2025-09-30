@@ -1,0 +1,16 @@
+[2025-09-28 08:15:42] ERROR: Failed to connect to database.
+    Module: db.connector
+    Exception: TimeoutError: Connection to database timed out after 30 seconds.
+    Traceback:
+        File "main.py", line 54, in <module>
+        File "db/connector.py", line 102, in connect
+        TimeoutError: Connection timed out
+
+[2025-09-28 08:15:43] WARNING: Retrying connection in 5 seconds...
+
+[2025-09-28 08:15:48] INFO: Reconnecting to database...
+
+[2025-09-28 08:15:50] ERROR: Database connection failed after retry.
+    Reason: Authentication failed for user 'admin'
+
+[2025-09-28 08:16:03] CRITICAL: Application shutting down due to database failure.

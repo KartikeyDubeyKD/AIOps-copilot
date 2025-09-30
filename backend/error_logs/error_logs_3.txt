@@ -1,0 +1,15 @@
+[2025-09-27 19:05:33] INFO: Starting background job scheduler...
+
+[2025-09-27 19:05:34] WARNING: Job 'email_dispatcher' is already running. Skipping duplicate.
+
+[2025-09-27 19:06:00] ERROR: Job 'data_sync' failed.
+    Reason: ValueError: Invalid JSON response received from API
+    URL: https://api.example.com/data
+    Status Code: 200
+
+[2025-09-27 19:06:02] INFO: Retrying job 'data_sync' in 60 seconds...
+
+[2025-09-27 19:07:02] ERROR: Retry failed for job 'data_sync'
+    Reason: ValueError: Unexpected end of JSON input
+
+[2025-09-27 19:07:15] WARNING: Job 'data_sync' has been disabled after 3 failed attempts.

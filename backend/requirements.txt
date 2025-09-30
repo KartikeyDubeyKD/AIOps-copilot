@@ -3,3 +3,8 @@ uvicorn
 requests
 httpx
 python-dotenv
+docker
+openai
+transformers
+torch
+accelerate
