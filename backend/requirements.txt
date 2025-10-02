@@ -8,3 +8,5 @@ openai
 transformers
 torch
 accelerate
+cerebras-cloud-sdk
+python-multipart
