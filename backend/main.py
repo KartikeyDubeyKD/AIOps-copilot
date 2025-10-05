@@ -128,15 +128,13 @@ async def recommend_actions(request: RecommendRequest):
 
 @app.post("/deploy")
 async def deploy_service(req: DeployRequest):
-    """
-    Direct deploy endpoint to match frontend quick-action
-    """
+    """Direct deploy endpoint using Docker MCP Gateway (mock)"""
     try:
-        client = docker.from_env()
-        client.images.pull(req.image)
-        container = client.containers.run(req.image, detach=True, name=req.service_name, ports={'80/tcp': None})
-        return make_response(ActionType.DEPLOYMENT, f"Deployed {req.service_name} from {req.image} (container {container.id[:12]})")
-    except docker.errors.ImageNotFound:
-        raise HTTPException(status_code=404, detail=f"Image {req.image} not found")
+        result = await docker_mcp_mock.deploy_container(
+            image=req.image,
+            name=req.service_name,
+            ports={'80/tcp': '8080'}
+        )
+        return make_response(ActionType.DEPLOYMENT, result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
