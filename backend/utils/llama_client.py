@@ -26,7 +26,7 @@ def generate_recommendations(log_summary: str) -> str:
 
     response = client.chat_completion(
         messages=messages,
-        max_tokens=200,
+        max_tokens=1024,
         temperature=0.5,
         top_p=0.9
     )

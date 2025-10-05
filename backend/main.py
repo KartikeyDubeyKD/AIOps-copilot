@@ -1,84 +1,142 @@
 import docker
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
-from fastapi import HTTPException
+from typing import Optional, List
+from enum import Enum
 from utils.cerebras_client import analyze_logs_with_cerebras
-from fastapi import UploadFile, File
 from utils.llama_client import generate_recommendations
+from fastapi.middleware.cors import CORSMiddleware
+from utils.docker_mcp_mock import docker_mcp_mock
+import asyncio
 
+# --- Models ---
+class ActionType(str, Enum):
+    LOG_ANALYSIS = "log_analysis"
+    RECOMMENDATION = "recommendation"
+    DEPLOYMENT = "deployment"
 
+class LogEntry(BaseModel):
+    filename: str
+    content: str
 
-app = FastAPI(title="AI Ops Copilot")
+class LogRequest(BaseModel):
+    logs: str
 
-class QueryRequest(BaseModel):
-    query: str
-    
+class ConversationContext(BaseModel):
+    logs: List[LogEntry] = []
+    analyses: List[str] = []
+    currentTopic: Optional[str] = None
+
+class ChatRequest(BaseModel):
+    message: str
+    context: Optional[ConversationContext] = None
+
+class RecommendRequest(BaseModel):
+    summary: str
+
 class DeployRequest(BaseModel):
     service_name: str
     image: str
 
-class LogRequest(BaseModel):
-    logs: str 
+# --- App Setup ---
+app = FastAPI(title="AI Ops Copilot")
 
-@app.get("/")
-def root():
-    return {"message": "AI Ops Copilot Backend is running 🚀"}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # change to list of origins for stricter security
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.post("/query")
-def query_ai(request: QueryRequest):
-    """
-    Meta Llama Integration Stub
-    """
-    return {
-        "input": request.query,
-        "response": f"Mock Llama response for: {request.query}"
-    }
+# --- Helpers ---
+def make_response(action_type: ActionType, result: str):
+    return {"type": action_type, "result": result}
 
-@app.post("/deploy")
-def deploy_service(request: DeployRequest):
-    """
-    Deploy container using Docker SDK (MCP-ready).
-    """
+# --- Endpoints ---
+@app.post("/copilot-chat")
+async def chat_endpoint(request: ChatRequest):
     try:
-        client = docker.from_env()
-        container = client.containers.run(
-            request.image,
-            name=request.service_name,
-            detach=True,
-            ports={"6379/tcp": 6379} if "redis" in request.image else None
-        )
-        return {
-            "service": request.service_name,
-            "image": request.image,
-            "status": "Running",
-            "container_id": container.id[:12]
-        }
+        message = (request.message or "").strip()
+        context = request.context or ConversationContext()
+
+        # Deploy command detection - USING MOCK MCP GATEWAY
+        if "deploy" in message.lower():
+            words = message.split()
+            image_name = next((w for w in words if ":" in w), None)
+            if not image_name and len(words) > 0:
+                image_name = words[-1]
+
+            if not image_name:
+                return make_response(ActionType.DEPLOYMENT, "Error: No image name found in request")
+
+            # Deploy via Docker MCP Gateway (mock)
+            result = await docker_mcp_mock.deploy_container(
+                image=image_name,
+                name=f"service-{image_name.replace(':', '-').replace('.', '-')}",
+                ports={'80/tcp': '8080'}
+            )
+            return make_response(ActionType.DEPLOYMENT, result)
+
+        # List containers command
+        if "list containers" in message.lower() or "show containers" in message.lower():
+            result = await docker_mcp_mock.list_containers()
+            return make_response(ActionType.DEPLOYMENT, result)
+
+        # MCP status command
+        if "mcp status" in message.lower() or "gateway status" in message.lower():
+            result = await docker_mcp_mock.get_mcp_status()
+            return make_response(ActionType.DEPLOYMENT, result)
+
+        # Rest of your existing Cerebras and Llama logic remains unchanged...
+        if any(w in message.lower() for w in ["error", "issue", "problem", "fail", "failure"]) and context and context.analyses:
+            latest_analysis = context.analyses[-1]
+            reco = generate_recommendations(f"Based on this log analysis: {latest_analysis}\nUser question: {request.message}")
+            return make_response(ActionType.RECOMMENDATION, reco)
+
+        # Default: ask LLaMA for a conversational/recommendation response
+        resp = generate_recommendations(message)
+        return make_response(ActionType.RECOMMENDATION, resp)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/analyze-logs")
-def analyze_logs(request: LogRequest):
-    summary = analyze_logs_with_cerebras(request.logs)
-    return {
-        "logs_received": request.logs[:100] + "...",
-        "analysis": summary
-    }
-
+async def analyze_logs(request: LogRequest):
+    try:
+        summary = analyze_logs_with_cerebras(request.logs)
+        return make_response(ActionType.LOG_ANALYSIS, summary)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/analyze-logs-upload")
 async def analyze_logs_upload(file: UploadFile = File(...)):
-    logs = (await file.read()).decode("utf-8")
-    summary = analyze_logs_with_cerebras(logs)
-    return {
-        "logs_received": logs[:100] + "...",
-        "analysis": summary
-    }
-    
+    try:
+        logs = (await file.read()).decode("utf-8")
+        summary = analyze_logs_with_cerebras(logs)
+        return make_response(ActionType.LOG_ANALYSIS, summary)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/recommend-actions")
-def recommend_actions(request: LogRequest):
-    summary = analyze_logs_with_cerebras(request.logs)  # Step 1: Cerebras analysis
-    recommendations = generate_recommendations(summary) # Step 2: LLaMA recommendations
-    return {
-        "analysis": summary,
-        "recommendations": recommendations
-    }
+async def recommend_actions(request: RecommendRequest):
+    try:
+        recommendations = generate_recommendations(request.summary)
+        return make_response(ActionType.RECOMMENDATION, recommendations)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/deploy")
+async def deploy_service(req: DeployRequest):
+    """
+    Direct deploy endpoint to match frontend quick-action
+    """
+    try:
+        client = docker.from_env()
+        client.images.pull(req.image)
+        container = client.containers.run(req.image, detach=True, name=req.service_name, ports={'80/tcp': None})
+        return make_response(ActionType.DEPLOYMENT, f"Deployed {req.service_name} from {req.image} (container {container.id[:12]})")
+    except docker.errors.ImageNotFound:
+        raise HTTPException(status_code=404, detail=f"Image {req.image} not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
