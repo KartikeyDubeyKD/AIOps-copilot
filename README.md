@@ -1,128 +1,193 @@
 # ⚡ AI Ops Copilot
 
-[![Live Demo](https://img.shields.io/badge/Demo-Live-green)](https://your-vercel-app.vercel.app)
-[![Backend](https://img.shields.io/badge/Backend-FastAPI-blue)](https://your-backend.onrender.com)
-[![Frontend](https://img.shields.io/badge/Frontend-React-purple)](https://your-vercel-app.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Demo-Live-green)](https://ai-ops-copilot.vercel.app/)
+[![Backend](https://img.shields.io/badge/Backend-FastAPI-blue)](https://aiops-copilot.onrender.com)
+[![Frontend](https://img.shields.io/badge/Frontend-React-purple)](https://ai-ops-copilot.vercel.app/)
 
-> An intelligent DevOps assistant that turns natural language into real infrastructure actions using **Cerebras**, **Meta Llama**, and **Docker MCP Gateway**.
+> **AI Ops Copilot** is an intelligent DevOps assistant that turns natural language into real infrastructure actions using **Cerebras Cloud**, **Meta Llama**, and the **Docker MCP Gateway**.  
+> Chat with your infrastructure — analyze logs, get AI-driven recommendations, and trigger deployments seamlessly.
+
+---
 
 ## 🏆 Hackathon Sponsor Integrations
 
 | Sponsor | Integration | Status |
-|---------|-------------|---------|
-| **Cerebras** | Real-time log analysis using Cerebras Cloud API | ✅ **Implemented** |
-| **Meta** | AI recommendations using Llama-3.1-8B via HuggingFace | ✅ **Implemented** |
-| **Docker** | Container deployment using MCP Gateway pattern | ✅ **Implemented** |
+|----------|--------------|---------|
+| **Cerebras** | Real-time log analysis using Cerebras Cloud API | ✅ Implemented |
+| **Meta AI** | AI recommendations using Llama 3.1 8B via Hugging Face Inference API | ✅ Implemented |
+| **Docker** | Container deployments via the MCP Gateway pattern | ✅ Implemented |
 
-## 🚀 Features
+---
 
-- **🤖 Intelligent Chat Interface** - Natural language conversations about your infrastructure
-- **📊 Log Analysis** - Upload log files and get AI-powered insights using Cerebras
-- **🛠️ Troubleshooting** - Get actionable recommendations using Meta Llama
-- **🐳 Container Deployment** - Deploy services using Docker MCP Gateway
-- **💬 Context-Aware** - Remembers conversation history and previous analyses
+## 🚀 Key Features
 
-## 🛠️ Tech Stack
+- **🤖 Conversational AI Interface** – Chat naturally with your DevOps assistant  
+- **📊 Log Analysis** – Upload `.log` or `.txt` files for instant AI-generated summaries (Cerebras)  
+- **🛠️ Troubleshooting Assistant** – Actionable remediation steps via Meta Llama  
+- **🐳 Smart Deployments** – Trigger service deployments using Docker MCP Gateway  
+- **💬 Context Awareness** – Conversation memory across multiple queries  
 
-### Backend
-- **FastAPI** - Modern Python web framework
-- **Cerebras Cloud SDK** - AI-powered log analysis
-- **HuggingFace Inference API** - Meta Llama integration
-- **Docker MCP Gateway** - Container orchestration
-- **Pydantic** - Data validation
-- **Uvicorn** - ASGI server
+---
 
-### Frontend
-- **React** - Modern UI framework
-- **Vite** - Fast build tool
-- **Axios** - HTTP client
-- **React Markdown** - Rich text rendering
-- **Tailwind CSS** - Styling
+## 🧱 Architecture
 
-## 📦 Quick Start
+```text
+┌────────────────────────┐      ┌─────────────────────────┐      ┌───────────────────────────┐
+│        React UI        │─────▶│        FastAPI          │─────▶│        AI Services        │
+│  • Chat / Upload Logs  │      │  • REST / Chat API      │      │  • Cerebras Cloud API     │
+│  • Natural Commands    │      │  • Context & Routing     │      │  • Meta Llama 3 8B (HF)   │
+└────────────────────────┘      │  • Docker MCP Gateway    │      └───────────────────────────┘
+                                └────────────┬─────────────┘
+                                             │
+                                     ┌───────▼────────┐
+                                     │   Docker Host   │
+                                     │  (Deployments)  │
+                                     └─────────────────┘
+```
 
-### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- Docker Engine (for local deployments)
+🛠️ Tech Stack
+**Backend**
 
-### Backend Setup
+  🧩 FastAPI · Uvicorn
+  
+  🤖 Cerebras Cloud SDK
+  
+  🧠 Hugging Face Inference API (Llama 3.1 8B Instruct)
+  
+  🐳 Docker MCP Gateway (Mock for Demo)
+  
+  🔐 Pydantic for validation
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/your-username/ai-ops-copilot
+**Frontend**
+  
+  ⚛️ React (via Vite)
+  
+  💨 Tailwind CSS
+  
+  🌐 Axios for API calls
+  
+  📝 React Markdown for rich responses
+
+⚙️ Setup Guide
+**Prerequisites**
+```text
+Python 3.8 +
+
+Node.js 16 +
+
+Docker Engine (optional for deploy testing)
+```
+Backend Setup
+git clone https://github.com/<your-username>/ai-ops-copilot
 cd ai-ops-copilot/backend
 
-### Install dependencies
-```bash
+## 1️⃣ Install dependencies
+```
 pip install -r requirements.txt
+```
 
-### Set up environment variables
+## 2️⃣ Create environment file
 ```
 cp .env.example .env
-# Add your API keys:
-# CEREBRAS_API_KEY=your_cerebras_key
-# HF_API_TOKEN=your_huggingface_token
+```
+
+## Add your keys:
+### CEREBRAS_API_KEY=your_cerebras_key
+### HF_API_TOKEN=your_huggingface_token
 
 
-### Run the backend
-```bash
+## 3️⃣ Run the server
+```
 uvicorn main:app --reload --port 8000
+```
 
-###Frontend Setup
-Navigate to frontend directory
-```bash
+Backend will start at http://127.0.0.1:8000
+
+Swagger Docs → http://127.0.0.1:8000/docs
+
+# Frontend Setup
 cd ../frontend
 
-### Install dependencies
-```bash
+## 1️⃣ Install dependencies
 npm install
 
-### Run the frontend
-Run the frontend
-```bash
-Run the frontend
+## 2️⃣ Set environment variable
+echo "VITE_API_BASE_URL=http://127.0.0.1:8000" > .env
+
+## 3️⃣ Run the frontend
+npm run dev
 
 
-###Architecture
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   React         │    │   FastAPI        │    │   AI Services   │
-│   Frontend      │────│   Backend        │────│                 │
-│                 │    │                  │    │  • Cerebras     │
-│ • Chat UI       │    │ • REST API       │    │  • Meta Llama   │
-│ • File Upload   │    │ • Auth & CORS    │    └─────────────────┘
-└─────────────────┘    │ • Docker MCP     │
-                       └──────────────────┘
-                                │
-                        ┌───────┴───────┐
-                        │   Docker      │
-                        │   Engine      │
-                        └───────────────┘
+Frontend runs at http://127.0.0.1:5173
+
+☁️ Deployment
+Backend (Render)
+
+Auto-deployed from main branch.
+
+Environment variables are configured in the Render Dashboard.
+
+Live API → https://aiops-copilot.onrender.com
+
+Frontend (Vercel)
+
+Connected to GitHub repo.
+
+Uses .env.production for the deployed API URL.
+
+Live App → https://ai-ops-copilot.vercel.app
+
+🔐 Environment Variables
+Key	Description
+CEREBRAS_API_KEY	API key from Cerebras Cloud
+HF_API_TOKEN	Hugging Face API token (for Llama)
+VITE_API_BASE_URL	Backend base URL (frontend env)
+💡 How It Works
+
+Upload Logs or Type Command
+
+/analyze-logs-upload → Cerebras analyzes logs in real-time.
+
+AI Recommends Fixes
+
+/recommend-actions or /copilot-chat → Llama suggests solutions.
+
+Trigger Deployments
+
+/deploy → Docker MCP Gateway deploys the service.
+
+Conversational Context
+
+/copilot-chat preserves chat history for context-aware answers.
 
 
-## 🚀 Deployment
+🧩 Environment Switching
 
-###Backend (Render)
-```bash
-# Deployed automatically from main branch
-# Environment variables set in Render dashboard
+You can easily switch between local and deployed backends:
+.env
+VITE_API_BASE_URL=http://127.0.0.1:8000
 
-###Fronten (Vercel)
-```bash
-# Connected to GitHub repo
-# Automatic deployments on push
+.env.production
+VITE_API_BASE_URL=https://aiops-copilot.onrender.com
 
+Vite automatically picks the correct one during build.
 
+📽️ Demo Preview
 
-###🤝 Contributing
-```bash 
-Fork the repository
+Live Demo: https://ai-ops-copilot.vercel.app
+Backend API: https://aiops-copilot.onrender.com/docs
 
-Create a feature branch (git checkout -b feature/amazing-feature)
-
-Commit your changes (git commit -m 'Add amazing feature')
-
-Push to the branch (git push origin feature/amazing-feature)
-
-Open a Pull Request
-
+🤝 Contributing
+# 1. Fork the repo
+# 2. Create a branch
+```
+git checkout -b feature/awesome-feature
+```
+# 3. Commit your changes
+```
+git commit -m "Add awesome feature"
+```
+# 4. Push and open a PR
+```
+git push origin feature/awesome-feature
+```
