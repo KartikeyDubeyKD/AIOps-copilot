@@ -63,7 +63,6 @@ export default function Chat() {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
-    
         const updatedContext = {
           ...conversationContext,
           logs: [...conversationContext.logs, { filename: attachment.name, content: fileContent }],
@@ -77,7 +76,6 @@ export default function Chat() {
         };
         
         setConversationContext(updatedContext);
-
         setAttachment(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
@@ -85,7 +83,7 @@ export default function Chat() {
           message: userMessage,
           context: {
             ...conversationContext,
-            recentMessages: messages.slice(-6) 
+            recentMessages: messages.slice(-6)
           }
         };
 
@@ -127,26 +125,56 @@ export default function Chat() {
     }
   };
 
+  const clearChat = () => {
+    setMessages([]);
+    setConversationContext({
+      logs: [],
+      analyses: [],
+      currentTopic: null,
+      conversationHistory: []
+    });
+  };
+
   return (
-    <div className="flex items-center justify-center p-6">
-      <div className="flex flex-col w-full max-w-2xl h-[640px] bg-gray-800 rounded-xl shadow-lg">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message, index) => (
+    <div className="flex flex-col h-full bg-gray-800 rounded-xl shadow-lg">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-white">AI Ops Assistant</h2>
+        <button
+          onClick={clearChat}
+          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
+        >
+          🗑️ Clear Chat
+        </button>
+      </div>
+
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-gray-400">
+              <div className="text-4xl mb-4">⚡</div>
+              <p className="text-lg">Welcome to AI Ops Copilot!</p>
+              <p className="text-sm mt-2">Upload logs or ask me about deployments and troubleshooting.</p>
+            </div>
+          </div>
+        ) : (
+          messages.map((message, index) => (
             <div
               key={index}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
                 className={`max-w-[80%] rounded-lg p-3 ${
-                    message.role === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : message.type === 'error'
-                        ? 'bg-red-700 text-white border-l-4 border-red-400'
-                        : message.type === 'deployment'  
-                        ? 'bg-green-700 text-white border-l-4 border-green-400'
-                        : message.type === 'log_analysis'
-                        ? 'bg-purple-700 text-white border-l-4 border-purple-400'
-                        : 'bg-gray-700 text-white'
+                  message.role === 'user'
+                    ? 'bg-blue-600 text-white'
+                    : message.type === 'error'
+                    ? 'bg-red-700 text-white border-l-4 border-red-400'
+                    : message.type === 'deployment'  
+                    ? 'bg-green-700 text-white border-l-4 border-green-400'
+                    : message.type === 'log_analysis'
+                    ? 'bg-purple-700 text-white border-l-4 border-purple-400'
+                    : 'bg-gray-700 text-white'
                 }`}
               >
                 <div className="prose prose-invert prose-p:my-1 prose-li:my-0 prose-ul:my-1 max-w-none">
@@ -162,71 +190,62 @@ export default function Chat() {
                 </div>
               </div>
             </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
 
-        <div className="p-4 border-t border-gray-700">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                className="hidden"
-                accept=".txt,.log"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600"
-              >
-                {attachment ? '📎 ' + attachment.name : '📎 Attach Log'}
-              </button>
+      {/* Input Area */}
+      <div className="p-4 border-t border-gray-700 bg-gray-750">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden"
+              accept=".txt,.log,.json"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+            >
+              <span>📎</span>
+              <span>{attachment ? attachment.name : 'Attach Logs'}</span>
+            </button>
+            {attachment && (
               <button
                 onClick={() => {
-                    setMessages([]);
-                    setConversationContext({
-                    logs: [],
-                    analyses: [],
-                    currentTopic: null,
-                    conversationHistory: []
-                    });
+                  setAttachment(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
                 }}
-                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                title="Clear conversation history"
-                >
-                🗑️ Clear
+                className="p-1 text-gray-400 hover:text-white transition-colors"
+                title="Remove attachment"
+              >
+                ✕
               </button>
-              {attachment && (
-                <button
-                  onClick={() => {
-                    setAttachment(null);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
-                  className="px-2 py-1 text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                className="flex-1 p-2 bg-gray-700 text-white rounded-lg border border-gray-600"
-                placeholder="Ask me anything... (e.g., 'deploy nginx:latest' or 'analyze auth logs')"
-                disabled={isLoading}
-              />
-              <button
-                onClick={handleSend}
-                disabled={isLoading}
-                className={`px-4 py-2 bg-blue-600 text-white rounded-lg ${isLoading ? 'opacity-50' : 'hover:bg-blue-700'}`}
-              > 
-                {isLoading ? 'Sending...' : 'Send'}
-              </button>
-            </div>
+            )}
+          </div>
+          
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              className="flex-1 p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none transition-colors"
+              placeholder="Ask me anything... (e.g., 'deploy nginx:latest' or 'analyze auth logs')"
+              disabled={isLoading}
+            />
+            <button
+              onClick={handleSend}
+              disabled={isLoading}
+              className={`px-6 py-3 bg-blue-600 text-white rounded-lg font-medium transition-colors ${
+                isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+              }`}
+            > 
+              {isLoading ? '...' : 'Send'}
+            </button>
           </div>
         </div>
       </div>
