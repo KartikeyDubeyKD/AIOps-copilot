@@ -55,6 +55,38 @@ app.add_middleware(
 def make_response(action_type: ActionType, result: str):
     return {"type": action_type, "result": result}
 
+def build_context_prompt(message: str, context: ConversationContext) -> str:
+    """Build a context-aware prompt for the AI"""
+    prompt_parts = []
+    
+    # Add recent conversation history
+    if context.conversationHistory:
+        prompt_parts.append("Recent conversation:")
+        for msg in context.conversationHistory[-6:]:  # Last 3 exchanges
+            role = "User" if msg["role"] == "user" else "Assistant"
+            prompt_parts.append(f"{role}: {msg['content']}")
+    
+    # Add log analyses if relevant
+    if context.analyses and any(word in message.lower() for word in ["log", "error", "issue", "analysis"]):
+        prompt_parts.append(f"\nPrevious log analysis: {context.analyses[-1]}")
+    
+    prompt_parts.append(f"\nCurrent user message: {message}")
+    prompt_parts.append("\nPlease provide a helpful response that considers the conversation context:")
+    
+    return "\n".join(prompt_parts)
+
+def format_conversation_history(history: List[dict]) -> str:
+    """Format conversation history for the prompt"""
+    if not history:
+        return "No previous conversation."
+    
+    formatted = []
+    for msg in history:
+        role = "User" if msg.get("role") == "user" else "Assistant"
+        formatted.append(f"{role}: {msg.get('content', '')}")
+    
+    return "\n".join(formatted)
+
 # --- Endpoints ---
 @app.post("/copilot-chat")
 async def chat_endpoint(request: ChatRequest):
@@ -63,7 +95,7 @@ async def chat_endpoint(request: ChatRequest):
         context = request.context or ConversationContext()
         
         # Build context-aware prompt
-        context_prompt = self._build_context_prompt(message, context)
+        context_prompt = build_context_prompt(message, context)
         
         # Deploy command detection - USING MOCK MCP GATEWAY
         if "deploy" in message.lower():
@@ -133,7 +165,7 @@ async def chat_endpoint(request: ChatRequest):
             # Build context-aware prompt
             prompt = f"""
             Conversation Context:
-            {self._format_conversation_history(context.conversationHistory[-4:])}  # Last 2 exchanges
+            {format_conversation_history(context.conversationHistory[-4:])}  # Last 2 exchanges
             
             Log Analysis Context: {latest_analysis}
             
@@ -159,7 +191,7 @@ async def chat_endpoint(request: ChatRequest):
         # Default: ask LLaMA with conversation context
         prompt = f"""
         Conversation History:
-        {self._format_conversation_history(context.conversationHistory[-6:])}  # Last 3 exchanges
+        {format_conversation_history(context.conversationHistory[-6:])}  # Last 3 exchanges
         
         Current Message: {message}
         
@@ -180,43 +212,8 @@ async def chat_endpoint(request: ChatRequest):
             "context": context
         }
 
-        # resp = generate_recommendations(message)
-        # return make_response(ActionType.RECOMMENDATION, resp)
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-def _build_context_prompt(self, message: str, context: ConversationContext) -> str:
-    """Build a context-aware prompt for the AI"""
-    prompt_parts = []
-    
-    # Add recent conversation history
-    if context.conversationHistory:
-        prompt_parts.append("Recent conversation:")
-        for msg in context.conversationHistory[-6:]:  # Last 3 exchanges
-            role = "User" if msg["role"] == "user" else "Assistant"
-            prompt_parts.append(f"{role}: {msg['content']}")
-    
-    # Add log analyses if relevant
-    if context.analyses and any(word in message.lower() for word in ["log", "error", "issue", "analysis"]):
-        prompt_parts.append(f"\nPrevious log analysis: {context.analyses[-1]}")
-    
-    prompt_parts.append(f"\nCurrent user message: {message}")
-    prompt_parts.append("\nPlease provide a helpful response that considers the conversation context:")
-    
-    return "\n".join(prompt_parts)
-
-def _format_conversation_history(self, history: List[dict]) -> str:
-    """Format conversation history for the prompt"""
-    if not history:
-        return "No previous conversation."
-    
-    formatted = []
-    for msg in history:
-        role = "User" if msg.get("role") == "user" else "Assistant"
-        formatted.append(f"{role}: {msg.get('content', '')}")
-    
-    return "\n".join(formatted)
 
 @app.post("/analyze-logs")
 async def analyze_logs(request: LogRequest):
