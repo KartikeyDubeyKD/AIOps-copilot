@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
-import config from '../config'; // Import the config
+import config from '../config';
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -11,7 +11,8 @@ export default function Chat() {
   const [conversationContext, setConversationContext] = useState({
     logs: [],
     analyses: [],
-    currentTopic: null
+    currentTopic: null,
+    conversationHistory: []
   });
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -40,15 +41,16 @@ export default function Chat() {
     setInput('');
 
     try {
-      // Read file content if present (so we can store locally)
       let fileContent = '';
       if (attachment) {
         fileContent = await attachment.text();
       }
 
+      const userMessageWithContext = userMessage + (attachment ? ` (with file: ${attachment.name})` : '');
+      
       setMessages(prev => [...prev, {
         role: 'user',
-        content: userMessage + (attachment ? ` (with file: ${attachment.name})` : '')
+        content: userMessageWithContext
       }]);
 
       let response;
@@ -61,21 +63,47 @@ export default function Chat() {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
-        // update conversation context
-        setConversationContext(prev => ({
-          ...prev,
-          logs: [...prev.logs, { filename: attachment.name, content: fileContent }],
-          analyses: [...prev.analyses, response.data.result],
-          currentTopic: attachment.name
-        }));
+    
+        const updatedContext = {
+          ...conversationContext,
+          logs: [...conversationContext.logs, { filename: attachment.name, content: fileContent }],
+          analyses: [...conversationContext.analyses, response.data.result],
+          currentTopic: attachment.name,
+          conversationHistory: [
+            ...conversationContext.conversationHistory,
+            { role: 'user', content: userMessageWithContext },
+            { role: 'assistant', content: response.data.result }
+          ]
+        };
+        
+        setConversationContext(updatedContext);
 
         setAttachment(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
-        response = await axios.post(`${config.API_BASE}/copilot-chat`, {
+        const requestPayload = {
           message: userMessage,
-          context: conversationContext
-        });
+          context: {
+            ...conversationContext,
+            recentMessages: messages.slice(-6) 
+          }
+        };
+
+        response = await axios.post(`${config.API_BASE}/copilot-chat`, requestPayload);
+
+        if (response.data.context) {
+          setConversationContext(response.data.context);
+        } else {
+          const updatedContext = {
+            ...conversationContext,
+            conversationHistory: [
+              ...conversationContext.conversationHistory,
+              { role: 'user', content: userMessage },
+              { role: 'assistant', content: response.data.result }
+            ]
+          };
+          setConversationContext(updatedContext);
+        }
       }
 
       const assistantText = response?.data?.result || response?.data?.analysis || response?.data?.response || 'No response received';
@@ -110,9 +138,15 @@ export default function Chat() {
             >
               <div
                 className={`max-w-[80%] rounded-lg p-3 ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-white'
+                    message.role === 'user'
+                        ? 'bg-blue-600 text-white'
+                        : message.type === 'error'
+                        ? 'bg-red-700 text-white border-l-4 border-red-400'
+                        : message.type === 'deployment'  
+                        ? 'bg-green-700 text-white border-l-4 border-green-400'
+                        : message.type === 'log_analysis'
+                        ? 'bg-purple-700 text-white border-l-4 border-purple-400'
+                        : 'bg-gray-700 text-white'
                 }`}
               >
                 <div className="prose prose-invert prose-p:my-1 prose-li:my-0 prose-ul:my-1 max-w-none">
@@ -147,6 +181,21 @@ export default function Chat() {
                 className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600"
               >
                 {attachment ? '📎 ' + attachment.name : '📎 Attach Log'}
+              </button>
+              <button
+                onClick={() => {
+                    setMessages([]);
+                    setConversationContext({
+                    logs: [],
+                    analyses: [],
+                    currentTopic: null,
+                    conversationHistory: []
+                    });
+                }}
+                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                title="Clear conversation history"
+                >
+                🗑️ Clear
               </button>
               {attachment && (
                 <button
